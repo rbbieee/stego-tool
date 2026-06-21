@@ -23,6 +23,8 @@ Thumbs.db
 *.swp
 *.swo
 output/
+output.png
+*_output.png
 *.bak
 *.log
 logs/
