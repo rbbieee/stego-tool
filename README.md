@@ -10,6 +10,8 @@ A simple command line tool to hide and reveal secret messages inside images usin
 
 - Hide any text message inside a PNG image
 - Reveal hidden messages from an encoded image
+- Optional password protection using XOR encryption
+- Simple graphical interface (GUI) and command line interface (CLI)
 - Capacity check so your message always fits
 - Clear error messages instead of crashes
 - Works fully offline, no data leaves your machine
@@ -56,7 +58,18 @@ Prefer a graphical interface? Run the GUI version:
 python gui.py
 ```
 
-Choose an image, type your message, and click Encode or Decode
+Choose an image, type your message, set an optional password, then click Encode or Decode
+
+## Encryption
+
+You can protect your message with a password. The message is XOR encrypted before being hidden, so even if someone extracts it, they only see scrambled text without the correct password
+
+```bash
+python stego.py encode -i input.png -m "secret" -o output.png -p mypassword
+python stego.py decode -i output.png -p mypassword
+```
+
+Note: XOR is used here for learning purposes. It is not secure enough for protecting truly sensitive data
 
 ## Capacity
 
