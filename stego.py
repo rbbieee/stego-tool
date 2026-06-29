@@ -1,6 +1,7 @@
 import os
 import argparse
 from PIL import Image
+from crypto import xor_cipher
 
 def text_to_binary(text):
     """Convert text into a string of bits"""
@@ -21,8 +22,15 @@ def get_capacity(img):
     # Subtract the delimiter length, then convert bits to characters
     return (total_bits - len(DELIMITER)) // 8
 
-def encode(image_path, message, output_path):
-    """Hide a secret message inside an image using LSB"""
+def encode(image_path, message, output_path, password=None):
+    """Hide a secret message inside an image using LSB
+
+    If a password is given, the message is XOR encrypted first
+    """
+    # Encrypt the message before hiding it, if a password is provided
+    if password:
+        message = xor_cipher(message, password)
+        
     # Check the file exists first
     if not os.path.exists(image_path):
         print(f"Error: file '{image_path}' not found")
@@ -79,8 +87,12 @@ def binary_to_text(binary):
         text += chr(int(byte, 2))
     return text
 
-def decode(image_path):
-    """Extract a hidden message from an image"""
+def decode(image_path, password=None):
+    """Extract a hidden message from an image
+
+    If a password is given, the message is XOR decrypted after extraction
+    """
+    
     if not os.path.exists(image_path):
         print(f"Error: file '{image_path}' not found")
         return None
@@ -104,6 +116,9 @@ def decode(image_path):
             if DELIMITER in binary_data:
                 binary_data = binary_data[:binary_data.index(DELIMITER)]
                 message = binary_to_text(binary_data)
+                # Decrypt if a password was provided
+                if password:
+                    message = xor_cipher(message, password)
                 print(f"Hidden message: {message}")
                 return message
 
@@ -124,19 +139,21 @@ def main():
     encode_parser.add_argument("-i", "--image", required=True, help="Path to the input image")
     encode_parser.add_argument("-m", "--message", required=True, help="The secret message to hide")
     encode_parser.add_argument("-o", "--output", required=True, help="Path to save the output image")
+    encode_parser.add_argument("-p", "--password", help="Optional password to encrypt the message")
 
     # --- decode command ---
     decode_parser = subparsers.add_parser("decode", help="Reveal a hidden message")
     decode_parser.add_argument("-i", "--image", required=True, help="Path to the image to read")
+    decode_parser.add_argument("-p", "--password", help="Password to decrypt the message")
 
     # Read what the user typed
     args = parser.parse_args()
 
     # Run the matching function
     if args.command == "encode":
-        encode(args.image, args.message, args.output)
+        encode(args.image, args.message, args.output, args.password)
     elif args.command == "decode":
-        decode(args.image)
+        decode(args.image, args.password)
 
 
 # This runs main() only when the file is executed directly
