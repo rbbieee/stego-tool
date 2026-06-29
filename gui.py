@@ -37,6 +37,13 @@ msg_label.pack()
 msg_entry = tk.Entry(root, width=50)
 msg_entry.pack(pady=5)
 
+# --- Password input (optional) ---
+pwd_label = tk.Label(root, text="Password (optional):")
+pwd_label.pack()
+
+pwd_entry = tk.Entry(root, width=50, show="*")
+pwd_entry.pack(pady=5)
+
 # Called when the Encode button is clicked
 def handle_encode():
     image = selected_image.get()
@@ -58,7 +65,9 @@ def handle_encode():
     if not output:
         return
 
-    encode(image, message, output)
+    # Get the password (empty string becomes None)
+    password = pwd_entry.get() or None
+    encode(image, message, output, password)
     result_label.config(text=f"Message hidden and saved to:\n{output}")
 
 
@@ -70,7 +79,9 @@ def handle_decode():
         messagebox.showwarning("Missing image", "Please choose an image first.")
         return
 
-    message = decode(image)
+    password = pwd_entry.get() or None
+    message = decode(image, password)
+    
     if message:
         result_label.config(text=f"Hidden message:\n{message}")
     else:
