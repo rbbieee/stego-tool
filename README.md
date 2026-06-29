@@ -48,6 +48,16 @@ See all available options:
 python stego.py --help
 ```
 
+## GUI
+
+Prefer a graphical interface? Run the GUI version:
+
+```bash
+python gui.py
+```
+
+Choose an image, type your message, and click Encode or Decode
+
 ## Capacity
 
 Each pixel can store 3 bits, one in the least significant bit of each color channel. The rough number of characters an image can hold is: 
