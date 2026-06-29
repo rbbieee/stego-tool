@@ -1,3 +1,4 @@
+import os
 import argparse
 from PIL import Image
 
@@ -12,26 +13,46 @@ def text_to_binary(text):
 # This marker tells the decoder where the hidden message ends
 DELIMITER = "1111111111111110"
 
+def get_capacity(img):
+    """Return how many characters an image can hold."""
+    width, height = img.size
+    # 3 bits per pixel (R, G, B), 8 bits per character
+    total_bits = width * height * 3
+    # Subtract the delimiter length, then convert bits to characters
+    return (total_bits - len(DELIMITER)) // 8
 
 def encode(image_path, message, output_path):
     """Hide a secret message inside an image using LSB"""
-    img = Image.open(image_path)
+    # Check the file exists first
+    if not os.path.exists(image_path):
+        print(f"Error: file '{image_path}' not found")
+        return
 
-    # Convert the message to bits and add the end marker
+    try:
+        img = Image.open(image_path)
+    except Exception:
+        print(f"Error: '{image_path}' is not a valid image")
+        return
+
+    # Convert to RGB so we always have 3 channels to work with
+    img = img.convert("RGB")
+
+    # Make sure the message actually fits
+    capacity = get_capacity(img)
+    if len(message) > capacity:
+        print(f"Error: message too long. this image holds up to {capacity} characters, "
+              f"but your message has {len(message)}.")
+        return
+
     binary_message = text_to_binary(message) + DELIMITER
-
-    # Load pixel data so we can edit it
     pixels = img.load()
     width, height = img.size
-
-    index = 0  # tracks which bit we hiding next
+    index = 0
 
     for y in range(height):
         for x in range(width):
-            # Get the RGB values of this pixel
-            r, g, b = img.getpixel((x, y))[:3]
+            r, g, b = img.getpixel((x, y))
 
-            # Replace the LSB of each color channel with a message bit
             if index < len(binary_message):
                 r = (r & ~1) | int(binary_message[index])
                 index += 1
@@ -44,13 +65,10 @@ def encode(image_path, message, output_path):
 
             pixels[x, y] = (r, g, b)
 
-            # Stop once the whole message is hidden
             if index >= len(binary_message):
                 img.save(output_path)
                 print(f"message hidden: saved to {output_path}")
                 return
-
-    print("image too small to hold this message")
     
 def binary_to_text(binary):
     """Convert a string of bits back into text"""
@@ -63,23 +81,27 @@ def binary_to_text(binary):
 
 def decode(image_path):
     """Extract a hidden message from an image"""
-    img = Image.open(image_path)
-    width, height = img.size
+    if not os.path.exists(image_path):
+        print(f"Error: file '{image_path}' not found")
+        return None
 
+    try:
+        img = Image.open(image_path).convert("RGB")
+    except Exception:
+        print(f"Error: '{image_path}' is not a valid image")
+        return None
+
+    width, height = img.size
     binary_data = ""
 
     for y in range(height):
         for x in range(width):
-            r, g, b = img.getpixel((x, y))[:3]
-
-            # Read the LSB of each color channel
+            r, g, b = img.getpixel((x, y))
             binary_data += str(r & 1)
             binary_data += str(g & 1)
             binary_data += str(b & 1)
 
-            # Check if we've reached the end marker
             if DELIMITER in binary_data:
-                # Cut off everything from the delimiter onward
                 binary_data = binary_data[:binary_data.index(DELIMITER)]
                 message = binary_to_text(binary_data)
                 print(f"Hidden message: {message}")
